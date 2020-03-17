@@ -34,6 +34,8 @@ def parse_args():
                         help='number of preprocessing workers')
     parser.add_argument('--num-epochs', type=int, default=3,
                         help='number of training epochs.')
+    parser.add_argument('--random-crop', action='store_true',
+                        help='whether use random crop augmentation during training. default is false.')
     parser.add_argument('--lr', type=float, default=0.1,
                         help='learning rate. default is 0.1.')
     parser.add_argument('--optimizer', type=str, default='nag',
@@ -106,17 +108,15 @@ def main():
     logging.basicConfig(level=logging.INFO)
     logging.info(opt)
 
-    transform_train = transforms.Compose([
-        gcv_transforms.RandomCrop(32, pad=4),
-        transforms.RandomFlipLeftRight(),
+    transforms_list_test = [
         transforms.ToTensor(),
         transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
-    ])
+    ]
+    transforms_list_train = [gcv_transforms.RandomCrop(32, pad=4)] if opt.random_crop else []
+    transforms_list_train += [transforms.RandomFlipLeftRight()] + transforms_list_test
 
-    transform_test = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize([0.4914, 0.4822, 0.4465], [0.2023, 0.1994, 0.2010])
-    ])
+    transform_train = transforms.Compose(transforms_list_train)
+    transform_test = transforms.Compose(transforms_list_test)
 
     def test(ctx, val_data):
         metric = mx.metric.Accuracy()
